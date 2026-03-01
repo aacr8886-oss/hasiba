@@ -765,11 +765,36 @@
   <div class="screen" id="screen-age">
     <button class="back-btn" onclick="goTo('home')">← رجوع</button>
     <div class="screen-title">🎂 حساب العمر</div>
-    <div class="card">
-      <div class="card-title"><span>📅</span> تاريخ الميلاد</div>
-      <input type="date" id="age-input" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:16px;outline:none;margin-bottom:14px;">
-      <button class="btn btn-purple" onclick="calcAge()">احسب العمر</button>
+
+    <!-- Input tabs -->
+    <div class="tabs">
+      <button class="tab active" id="age-tab-m" onclick="switchAgeTab('m')">🌍 إدخال ميلادي</button>
+      <button class="tab" id="age-tab-h" onclick="switchAgeTab('h')">☪️ إدخال هجري</button>
     </div>
+
+    <!-- Miladi input -->
+    <div id="age-panel-m">
+      <div class="card">
+        <div class="card-title"><span>📅</span> تاريخ الميلاد (ميلادي)</div>
+        <input type="date" id="age-input-m" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:16px;outline:none;margin-bottom:14px;transition:border-color 0.2s;">
+        <button class="btn btn-purple" onclick="calcAge('m')">احسب العمر</button>
+      </div>
+    </div>
+
+    <!-- Hijri input -->
+    <div id="age-panel-h" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>☪️</span> تاريخ الميلاد (هجري)</div>
+        <div class="date-row" style="margin-bottom:14px;">
+          <select id="age-h-day"></select>
+          <select id="age-h-month"></select>
+          <select id="age-h-year"></select>
+        </div>
+        <button class="btn btn-purple" onclick="calcAge('h')">احسب العمر</button>
+      </div>
+    </div>
+
+    <!-- Results -->
     <div id="age-result" style="display:none">
       <div class="card">
         <div class="card-title"><span>🌍</span> العمر بالتقويم الميلادي</div>
@@ -795,17 +820,20 @@
         <div class="card-title"><span>☪️</span> العمر بالتقويم الهجري</div>
         <div class="age-grid">
           <div class="age-box">
-            <div class="age-box-value" id="age-h-y" style="color:var(--accent4)"></div>
+            <div class="age-box-value" id="age-h-y-res" style="color:var(--accent4)"></div>
             <div class="age-box-label">سنة هجرية</div>
           </div>
           <div class="age-box">
-            <div class="age-box-value" id="age-h-mo" style="color:var(--accent4)"></div>
+            <div class="age-box-value" id="age-h-mo-res" style="color:var(--accent4)"></div>
             <div class="age-box-label">شهر</div>
           </div>
           <div class="age-box">
-            <div class="age-box-value" id="age-h-d" style="color:var(--accent4)"></div>
+            <div class="age-box-value" id="age-h-d-res" style="color:var(--accent4)"></div>
             <div class="age-box-label">يوم</div>
           </div>
+        </div>
+        <div style="text-align:center; margin-top:12px; font-size:13px; color:var(--text3)">
+          تاريخ الميلاد هجري: <span id="age-birth-hijri-display" style="color:var(--accent4); font-weight:600"></span>
         </div>
       </div>
     </div>
@@ -1092,41 +1120,79 @@ function calcDiff() {
 }
 
 // ==================== AGE ====================
-function calcAge() {
-  const bStr = document.getElementById('age-input').value;
-  if(!bStr) return alert('يرجى إدخال تاريخ الميلاد');
-  const birth = new Date(bStr);
+let ageTab = 'm';
+
+function switchAgeTab(tab) {
+  ageTab = tab;
+  document.getElementById('age-panel-m').style.display = tab === 'm' ? '' : 'none';
+  document.getElementById('age-panel-h').style.display = tab === 'h' ? '' : 'none';
+  document.getElementById('age-tab-m').classList.toggle('active', tab === 'm');
+  document.getElementById('age-tab-h').classList.toggle('active', tab === 'h');
+  document.getElementById('age-result').style.display = 'none';
+}
+
+function initAgeHijriSelects() {
+  const h = todayHijri();
+  fillSelect('age-h-day', 1, 30, 1);
+  const ms = document.getElementById('age-h-month');
+  ms.innerHTML = HIJRI_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+  fillSelect('age-h-year', 1350, h.year, h.year - 25);
+}
+
+function calcAge(mode) {
+  let birthG; // { year, month, day } gregorian
+
+  if(mode === 'm') {
+    const bStr = document.getElementById('age-input-m').value;
+    if(!bStr) return alert('يرجى إدخال تاريخ الميلاد');
+    const d = new Date(bStr);
+    birthG = { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate() };
+  } else {
+    // Hijri input → convert to Gregorian
+    const hDay   = parseInt(document.getElementById('age-h-day').value);
+    const hMonth = parseInt(document.getElementById('age-h-month').value);
+    const hYear  = parseInt(document.getElementById('age-h-year').value);
+    birthG = hijriToGregorian(hYear, hMonth, hDay);
+  }
+
+  const birth = new Date(birthG.year, birthG.month-1, birthG.day);
   const today = new Date();
-  
-  let y = today.getFullYear() - birth.getFullYear();
-  let m = today.getMonth() - birth.getMonth();
-  let d = today.getDate() - birth.getDate();
-  
-  if(d < 0) { m--; const prev = new Date(today.getFullYear(), today.getMonth(), 0); d += prev.getDate(); }
-  if(m < 0) { y--; m += 12; }
-  
+
+  if(birth > today) return alert('تاريخ الميلاد لا يمكن أن يكون في المستقبل');
+
+  // ── Gregorian age ──
+  let gy = today.getFullYear() - birth.getFullYear();
+  let gm = today.getMonth()    - birth.getMonth();
+  let gd = today.getDate()     - birth.getDate();
+  if(gd < 0) { gm--; gd += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); }
+  if(gm < 0) { gy--; gm += 12; }
+
   const totalDays = Math.floor((today - birth) / (1000*60*60*24));
-  
-  document.getElementById('age-m-y').textContent = y;
-  document.getElementById('age-m-mo').textContent = m;
-  document.getElementById('age-m-d').textContent = d;
-  document.getElementById('age-total-days').textContent = totalDays.toLocaleString('ar-SA');
-  
-  // Hijri age
-  const birthH = gregorianToHijri(birth.getFullYear(), birth.getMonth()+1, birth.getDate());
+
+  // ── Hijri age ──
+  const birthH = gregorianToHijri(birthG.year, birthG.month, birthG.day);
   const todayH = gregorianToHijri(today.getFullYear(), today.getMonth()+1, today.getDate());
-  
-  let hy = todayH.year - birthH.year;
+
+  let hy = todayH.year  - birthH.year;
   let hm = todayH.month - birthH.month;
-  let hd = todayH.day - birthH.day;
-  
+  let hd = todayH.day   - birthH.day;
   if(hd < 0) { hm--; hd += 29; }
   if(hm < 0) { hy--; hm += 12; }
-  
-  document.getElementById('age-h-y').textContent = hy;
-  document.getElementById('age-h-mo').textContent = hm;
-  document.getElementById('age-h-d').textContent = hd;
-  
+
+  // ── Render ──
+  document.getElementById('age-m-y').textContent  = gy;
+  document.getElementById('age-m-mo').textContent = gm;
+  document.getElementById('age-m-d').textContent  = gd;
+  document.getElementById('age-total-days').textContent = totalDays.toLocaleString('ar-SA');
+
+  document.getElementById('age-h-y-res').textContent  = hy;
+  document.getElementById('age-h-mo-res').textContent = hm;
+  document.getElementById('age-h-d-res').textContent  = hd;
+
+  // Show birth hijri date (useful when input was Gregorian)
+  document.getElementById('age-birth-hijri-display').textContent =
+    `${birthH.day} ${HIJRI_MONTHS[birthH.month-1]} ${birthH.year} هـ`;
+
   document.getElementById('age-result').style.display = '';
 }
 
@@ -1269,6 +1335,7 @@ function toggleTheme() {
 // ==================== INIT ====================
 renderHomeToday();
 initConvertSelects();
+initAgeHijriSelects();
 // Set today's date for diff and age inputs
 const todayStr = new Date().toISOString().split('T')[0];
 document.getElementById('diff-d1').value = todayStr;
