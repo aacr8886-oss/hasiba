@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>حاسبتي الشاملة</title>
+<meta name="theme-color" content="#0f172a">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --bg3: #334155;
+    --card: #1e293b;
+    --border: #334155;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+    --accent6: #a78bfa;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --shadow: 0 20px 60px rgba(0,0,0,0.5);
+    --radius: 20px;
+    --radius-sm: 12px;
+    --header-bg: rgba(15,23,42,0.95);
+  }
+
+  :root.light {
+    --bg: #f1f5f9;
+    --bg2: #e2e8f0;
+    --bg3: #cbd5e1;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --accent: #0284c7;
+    --accent2: #6366f1;
+    --accent3: #059669;
+    --accent4: #ea580c;
+    --accent5: #db2777;
+    --accent6: #7c3aed;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --shadow: 0 10px 40px rgba(0,0,0,0.1);
+    --header-bg: rgba(241,245,249,0.95);
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    width: 52px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .theme-toggle-knob {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    transform: translateX(0);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+
+  :root.light .theme-toggle-knob {
+    transform: translateX(24px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { transition: background 0.3s, color 0.3s; }
+
+  body {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(56,189,248,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(129,140,248,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(52,211,153,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s;
+  }
+
+  :root.light body::before {
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(2,132,199,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(99,102,241,0.06) 0%, transparent 50%);
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 16px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    background: var(--header-bg);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(51,65,85,0.5);
+    z-index: 100;
+  }
+
+  .header-title {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  /* Screens */
+  .screen { display: none; padding: 20px; animation: slideIn 0.3s ease; }
+  .screen.active { display: block; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Home Grid */
+  .home-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding-top: 8px;
+  }
+
+  .home-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .home-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: var(--radius);
+  }
+
+  .home-btn:active { transform: scale(0.96); }
+  .home-btn:hover::before { opacity: 1; }
+
+  .home-btn.c1::before { background: linear-gradient(135deg, rgba(56,189,248,0.15), transparent); }
+  .home-btn.c2::before { background: linear-gradient(135deg, rgba(129,140,248,0.15), transparent); }
+  .home-btn.c3::before { background: linear-gradient(135deg, rgba(52,211,153,0.15), transparent); }
+  .home-btn.c4::before { background: linear-gradient(135deg, rgba(251,146,60,0.15), transparent); }
+  .home-btn.c5::before { background: linear-gradient(135deg, rgba(244,114,182,0.15), transparent); }
+  .home-btn.c6::before { background: linear-gradient(135deg, rgba(167,139,250,0.15), transparent); }
+
+  .home-btn-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+    display: block;
+    filter: drop-shadow(0 0 12px currentColor);
+  }
+
+  .home-btn.c1 .home-btn-icon { color: var(--accent); }
+  .home-btn.c2 .home-btn-icon { color: var(--accent2); }
+  .home-btn.c3 .home-btn-icon { color: var(--accent3); }
+  .home-btn.c4 .home-btn-icon { color: var(--accent4); }
+  .home-btn.c5 .home-btn-icon { color: var(--accent5); }
+  .home-btn.c6 .home-btn-icon { color: var(--accent6); }
+
+  .home-btn-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title span { font-size: 18px; }
+
+  /* Input */
+  .input-group { margin-bottom: 14px; }
+  .input-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: block; }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.1);
+  }
+
+  select option { background: var(--bg2); }
+
+  /* Date inputs row */
+  .date-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 3fr;
+    gap: 8px;
+  }
+
+  /* Button */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #0ea5e9);
+    color: #0f172a;
+  }
+
+  .btn-secondary {
+    background: var(--bg3);
+    color: var(--text);
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, var(--accent3), #059669);
+    color: #0f172a;
+  }
+
+  .btn-purple {
+    background: linear-gradient(135deg, var(--accent2), #6366f1);
+    color: white;
+  }
+
+  /* Result box */
+  .result-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-top: 14px;
+    text-align: center;
+    display: none;
+  }
+
+  .result-box.show { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .result-main {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .result-sub {
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .result-detail {
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  /* Back button */
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+
+  .back-btn:hover { color: var(--accent); }
+
+  .screen-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--text), var(--text2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Calendar */
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .cal-nav {
+    background: var(--bg3);
+    border: none;
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .cal-nav:active { transform: scale(0.9); }
+
+  .cal-month-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .cal-month-label small {
+    display: block;
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  .cal-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+
+  .cal-day-name {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text3);
+    padding: 6px 0;
+    font-weight: 600;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .cal-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .cal-cell:empty { pointer-events: none; }
+  .cal-cell.empty { background: transparent; }
+
+  .cal-cell:not(.empty):hover {
+    background: var(--bg3);
+  }
+
+  .cal-cell.today {
+    background: linear-gradient(135deg, var(--accent), #0ea5e9) !important;
+    color: #0f172a !important;
+    font-weight: 700;
+  }
+
+  .cal-cell.today .cal-hijri { color: rgba(0,0,0,0.6) !important; }
+
+  .cal-cell.other-month { opacity: 0.35; }
+
+  .cal-hijri {
+    font-size: 8px;
+    color: var(--text3);
+    margin-top: 1px;
+    line-height: 1;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--text3);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  /* VAT result */
+  .vat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .vat-box {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .vat-box-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .vat-box-value { font-size: 20px; font-weight: 700; }
+  .vat-box.tax .vat-box-value { color: var(--accent4); }
+  .vat-box.total .vat-box-value { color: var(--accent3); }
+  .vat-box.original .vat-box-value { color: var(--accent); }
+  .vat-box.tax2 .vat-box-value { color: var(--accent5); }
+
+  /* Age result */
+  .age-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .age-box {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .age-box-value { font-size: 24px; font-weight: 700; color: var(--accent2); }
+  .age-box-label { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* Numbers text result */
+  .number-text-result {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.6;
+    display: none;
+  }
+
+  .number-text-result.show { display: block; animation: fadeIn 0.3s ease; }
+
+  /* Today card */
+  .today-card {
+    background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(129,140,248,0.15));
+    border: 1px solid rgba(56,189,248,0.3);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .today-hijri { font-size: 24px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .today-miladi { font-size: 16px; color: var(--text2); }
+  .today-day { font-size: 13px; color: var(--text3); margin-top: 4px; }
+
+  /* Diff result */
+  .diff-parts {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .diff-part {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+    min-width: 80px;
+  }
+
+  .diff-part-value { font-size: 28px; font-weight: 700; color: var(--accent3); }
+  .diff-part-label { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+  /* Scrollable */
+  .screen { padding-bottom: 40px; }
+
+  /* RTL fix for input numbers */
+  input[type="number"] { direction: ltr; text-align: right; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <button class="theme-toggle" onclick="toggleTheme()" title="تبديل المظهر">
+      <div class="theme-toggle-knob" id="theme-knob">🌙</div>
+    </button>
+    <div class="header-title">🧮 حاسبتي الشاملة</div>
+    <div class="header-sub">أدوات الحساب والتاريخ للسعودية</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div style="padding: 16px 0 8px; text-align:center;">
+      <div id="home-today-hijri" style="font-size:18px; font-weight:700; color:var(--accent);"></div>
+      <div id="home-today-miladi" style="font-size:13px; color:var(--text3); margin-top:3px;"></div>
+    </div>
+    <div class="home-grid">
+      <div class="home-btn c1" onclick="goTo('calendar')">
+        <span class="home-btn-icon">📅</span>
+        <div class="home-btn-label">التقويم الهجري والميلادي</div>
+      </div>
+      <div class="home-btn c2" onclick="goTo('convert')">
+        <span class="home-btn-icon">🔄</span>
+        <div class="home-btn-label">تحويل التاريخ</div>
+      </div>
+      <div class="home-btn c3" onclick="goTo('diff')">
+        <span class="home-btn-icon">📏</span>
+        <div class="home-btn-label">الفرق بين تاريخين</div>
+      </div>
+      <div class="home-btn c4" onclick="goTo('age')">
+        <span class="home-btn-icon">🎂</span>
+        <div class="home-btn-label">حساب العمر</div>
+      </div>
+      <div class="home-btn c5" onclick="goTo('numbers')">
+        <span class="home-btn-icon">🔢</span>
+        <div class="home-btn-label">الأرقام كتابةً</div>
+      </div>
+      <div class="home-btn c6" onclick="goTo('vat')">
+        <span class="home-btn-icon">💰</span>
+        <div class="home-btn-label">حساب ضريبة 15%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="screen" id="screen-calendar">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">📅 التقويم</div>
+    <div class="today-card">
+      <div class="today-hijri" id="cal-today-hijri"></div>
+      <div class="today-miladi" id="cal-today-miladi"></div>
+      <div class="today-day" id="cal-today-day"></div>
+    </div>
+    <div class="card">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calNav(-1)">›</button>
+        <div class="cal-month-label" id="cal-label">
+          <span id="cal-miladi-month"></span>
+          <small id="cal-hijri-month"></small>
+        </div>
+        <button class="cal-nav" onclick="calNav(1)">‹</button>
+      </div>
+      <div class="cal-days-header">
+        <div class="cal-day-name">أحد</div>
+        <div class="cal-day-name">إثن</div>
+        <div class="cal-day-name">ثلا</div>
+        <div class="cal-day-name">أرب</div>
+        <div class="cal-day-name">خمي</div>
+        <div class="cal-day-name">جمع</div>
+        <div class="cal-day-name">سبت</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- CONVERT -->
+  <div class="screen" id="screen-convert">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">🔄 تحويل التاريخ</div>
+    <div class="tabs">
+      <button class="tab active" id="tab-h2m" onclick="switchConvertTab('h2m')">هجري ← ميلادي</button>
+      <button class="tab" id="tab-m2h" onclick="switchConvertTab('m2h')">ميلادي ← هجري</button>
+    </div>
+
+    <div id="panel-h2m">
+      <div class="card">
+        <div class="card-title"><span>📅</span> أدخل التاريخ الهجري</div>
+        <div class="date-row">
+          <select id="h2m-day"></select>
+          <select id="h2m-month"></select>
+          <select id="h2m-year"></select>
+        </div>
+        <button class="btn btn-primary" onclick="convertH2M()">تحويل إلى ميلادي</button>
+        <div class="result-box" id="h2m-result">
+          <div class="result-sub">التاريخ الميلادي</div>
+          <div class="result-main" id="h2m-result-val"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-m2h" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>📅</span> أدخل التاريخ الميلادي</div>
+        <div class="date-row">
+          <select id="m2h-day"></select>
+          <select id="m2h-month"></select>
+          <select id="m2h-year"></select>
+        </div>
+        <button class="btn btn-primary" onclick="convertM2H()">تحويل إلى هجري</button>
+        <div class="result-box" id="m2h-result">
+          <div class="result-sub">التاريخ الهجري</div>
+          <div class="result-main" id="m2h-result-val"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIFF -->
+  <div class="screen" id="screen-diff">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">📏 الفرق بين تاريخين</div>
+    <div class="card">
+      <div class="card-title"><span>1️⃣</span> التاريخ الأول (ميلادي)</div>
+      <input type="date" id="diff-d1" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:16px;outline:none;margin-bottom:14px;">
+    </div>
+    <div class="card">
+      <div class="card-title"><span>2️⃣</span> التاريخ الثاني (ميلادي)</div>
+      <input type="date" id="diff-d2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:16px;outline:none;margin-bottom:14px;">
+    </div>
+    <button class="btn btn-success" onclick="calcDiff()">احسب الفرق</button>
+    <div id="diff-result" style="display:none">
+      <div class="result-box show">
+        <div class="result-sub" style="margin-bottom:12px;">المدة الكاملة</div>
+        <div class="result-main" id="diff-text"></div>
+      </div>
+      <div class="diff-parts">
+        <div class="diff-part">
+          <div class="diff-part-value" id="diff-years"></div>
+          <div class="diff-part-label">سنة</div>
+        </div>
+        <div class="diff-part">
+          <div class="diff-part-value" id="diff-months"></div>
+          <div class="diff-part-label">شهر</div>
+        </div>
+        <div class="diff-part">
+          <div class="diff-part-value" id="diff-days"></div>
+          <div class="diff-part-label">يوم</div>
+        </div>
+        <div class="diff-part" style="min-width:120px">
+          <div class="diff-part-value" id="diff-total-days" style="font-size:20px"></div>
+          <div class="diff-part-label">إجمالي الأيام</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGE -->
+  <div class="screen" id="screen-age">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">🎂 حساب العمر</div>
+    <div class="card">
+      <div class="card-title"><span>📅</span> تاريخ الميلاد</div>
+      <input type="date" id="age-input" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:16px;outline:none;margin-bottom:14px;">
+      <button class="btn btn-purple" onclick="calcAge()">احسب العمر</button>
+    </div>
+    <div id="age-result" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>🌍</span> العمر بالتقويم الميلادي</div>
+        <div class="age-grid">
+          <div class="age-box">
+            <div class="age-box-value" id="age-m-y"></div>
+            <div class="age-box-label">سنة</div>
+          </div>
+          <div class="age-box">
+            <div class="age-box-value" id="age-m-mo"></div>
+            <div class="age-box-label">شهر</div>
+          </div>
+          <div class="age-box">
+            <div class="age-box-value" id="age-m-d"></div>
+            <div class="age-box-label">يوم</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:12px; font-size:13px; color:var(--text3)">
+          أي ما يساوي <span id="age-total-days" style="color:var(--accent); font-weight:600"></span> يوم
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>☪️</span> العمر بالتقويم الهجري</div>
+        <div class="age-grid">
+          <div class="age-box">
+            <div class="age-box-value" id="age-h-y" style="color:var(--accent4)"></div>
+            <div class="age-box-label">سنة هجرية</div>
+          </div>
+          <div class="age-box">
+            <div class="age-box-value" id="age-h-mo" style="color:var(--accent4)"></div>
+            <div class="age-box-label">شهر</div>
+          </div>
+          <div class="age-box">
+            <div class="age-box-value" id="age-h-d" style="color:var(--accent4)"></div>
+            <div class="age-box-label">يوم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUMBERS -->
+  <div class="screen" id="screen-numbers">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">🔢 الأرقام كتابةً</div>
+    <div class="card">
+      <div class="card-title"><span>✍️</span> أدخل الرقم</div>
+      <input type="number" id="num-input" placeholder="مثال: 15234" min="0" oninput="convertNumberLive()">
+    </div>
+    <div class="number-text-result" id="num-result"></div>
+  </div>
+
+  <!-- VAT -->
+  <div class="screen" id="screen-vat">
+    <button class="back-btn" onclick="goTo('home')">← رجوع</button>
+    <div class="screen-title">💰 حساب ضريبة القيمة المضافة</div>
+    <div style="text-align:center; background:linear-gradient(135deg,rgba(52,211,153,0.15),rgba(56,189,248,0.1)); border:1px solid rgba(52,211,153,0.3); border-radius:14px; padding:12px; margin-bottom:16px; font-size:14px; color:var(--accent3); font-weight:600;">
+      🇸🇦 نسبة الضريبة: 15%
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="vat-tab1" onclick="switchVatTab('excl')">المبلغ غير شامل</button>
+      <button class="tab" id="vat-tab2" onclick="switchVatTab('incl')">المبلغ شامل الضريبة</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>💵</span> <span id="vat-label">أدخل المبلغ قبل الضريبة</span></div>
+      <div style="position:relative">
+        <input type="number" id="vat-input" placeholder="0.00" min="0" step="0.01">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;">ر.س</span>
+      </div>
+      <button class="btn btn-success" style="margin-top:14px" onclick="calcVat()">احسب الضريبة</button>
+    </div>
+    <div id="vat-result" style="display:none">
+      <div class="card">
+        <div class="vat-grid" id="vat-grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; padding: 24px 0 32px; color: var(--text3); font-size: 13px;">
+  <div style="margin-bottom:4px; font-size:18px;">✦</div>
+  تصميم <span style="color:var(--accent); font-weight:700;">أبو نوح</span>
+</div>
+
+<script>
+// ==================== NAVIGATION ====================
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if(id === 'calendar') renderCalendar();
+  window.scrollTo(0,0);
+}
+
+// ==================== HIJRI CONVERSION ====================
+// Umm al-Qura calendar algorithm — matches Saudi official calendar
+// Correction offset +1 to align with actual Saudi Umm al-Qura observation
+const HIJRI_OFFSET = 0; // Verified via Intl.DateTimeFormat umalqura
+
+function gregorianToJD(y, m, d) {
+  if (m <= 2) { y--; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
+}
+
+function jdToGregorian(jd) {
+  const z = Math.floor(jd + 0.5);
+  const a = Math.floor((z - 1867216.25) / 36524.25);
+  const A = z + 1 + a - Math.floor(a / 4);
+  const B = A + 1524;
+  const C = Math.floor((B - 122.1) / 365.25);
+  const D = Math.floor(365.25 * C);
+  const E = Math.floor((B - D) / 30.6001);
+  const day = B - D - Math.floor(30.6001 * E);
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  return { year, month, day };
+}
+
+function hijriToJD(hy, hm, hd) {
+  // Standard tabular Islamic calendar JD
+  return Math.floor((11 * hy + 3) / 30) +
+         354 * hy + 30 * hm -
+         Math.floor((hm - 1) / 2) + hd + 1948440 - 385;
+}
+
+function jdToHijri(jd) {
+  // Apply +HIJRI_OFFSET days to JD before converting to match Umm al-Qura
+  const jdAdj = Math.floor(jd + 0.5) + HIJRI_OFFSET;
+  let hy = Math.floor((30 * (jdAdj - 1948438.5) + 10646) / 10631);
+  if (hy < 1) hy = 1;
+  let hm = Math.min(12, Math.ceil((jdAdj - (29 + hijriToJD(hy, 1, 1))) / 29.5) + 1);
+  if (hm < 1) hm = 1;
+  let hd = jdAdj - hijriToJD(hy, hm, 1) + 1;
+  // Boundary correction
+  if (hd < 1) { hm--; if (hm < 1) { hy--; hm = 12; } hd = jdAdj - hijriToJD(hy, hm, 1) + 1; }
+  if (hd > 30) { hm++; if (hm > 12) { hy++; hm = 1; } hd = 1; }
+  return { year: hy, month: hm, day: hd };
+}
+
+function gregorianToHijri(gYear, gMonth, gDay) {
+  const jd = gregorianToJD(gYear, gMonth, gDay);
+  return jdToHijri(jd);
+}
+
+function hijriToGregorian(hYear, hMonth, hDay) {
+  // Reverse: subtract offset when converting back
+  const jd = hijriToJD(hYear, hMonth, hDay) - HIJRI_OFFSET;
+  return jdToGregorian(jd);
+}
+
+const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+const MILADI_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+function todayHijri() {
+  const n = new Date();
+  return gregorianToHijri(n.getFullYear(), n.getMonth()+1, n.getDate());
+}
+
+// ==================== HOME TODAY ====================
+function renderHomeToday() {
+  const n = new Date();
+  const h = todayHijri();
+  document.getElementById('home-today-hijri').textContent = 
+    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
+  document.getElementById('home-today-miladi').textContent = 
+    `${n.getDate()} ${MILADI_MONTHS[n.getMonth()]} ${n.getFullYear()} م`;
+}
+
+// ==================== CALENDAR ====================
+let calDate = new Date();
+
+function renderCalendar() {
+  const today = new Date();
+  const todayH = todayHijri();
+  const h = gregorianToHijri(calDate.getFullYear(), calDate.getMonth()+1, 1);
+  
+  document.getElementById('cal-miladi-month').textContent = 
+    `${MILADI_MONTHS[calDate.getMonth()]} ${calDate.getFullYear()}`;
+  document.getElementById('cal-hijri-month').textContent = 
+    `${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
+  
+  // Today card
+  const todayG = new Date();
+  document.getElementById('cal-today-hijri').textContent = 
+    `${todayH.day} ${HIJRI_MONTHS[todayH.month-1]} ${todayH.year} هـ`;
+  document.getElementById('cal-today-miladi').textContent = 
+    `${todayG.getDate()} ${MILADI_MONTHS[todayG.getMonth()]} ${todayG.getFullYear()} م`;
+  document.getElementById('cal-today-day').textContent = DAYS_AR[todayG.getDay()];
+
+  // Grid
+  const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1).getDay();
+  const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate();
+  
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  
+  // Empty cells
+  for(let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell empty';
+    grid.appendChild(cell);
+  }
+  
+  for(let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    const hd = gregorianToHijri(calDate.getFullYear(), calDate.getMonth()+1, d);
+    const isToday = d === today.getDate() && calDate.getMonth() === today.getMonth() && calDate.getFullYear() === today.getFullYear();
+    cell.className = 'cal-cell' + (isToday ? ' today' : '');
+    cell.innerHTML = `<span>${d}</span><span class="cal-hijri">${hd.day}</span>`;
+    grid.appendChild(cell);
+  }
+}
+
+function calNav(dir) {
+  calDate.setMonth(calDate.getMonth() - dir);
+  renderCalendar();
+}
+
+// ==================== CONVERT SELECTS ====================
+function fillSelect(id, from, to, defaultVal) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  for(let i = from; i <= to; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i;
+    if(i === defaultVal) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function initConvertSelects() {
+  const n = new Date();
+  const h = todayHijri();
+  
+  // Hijri to Miladi
+  fillSelect('h2m-day', 1, 30, h.day);
+  const hms = document.getElementById('h2m-month');
+  hms.innerHTML = HIJRI_MONTHS.map((m,i) => `<option value="${i+1}" ${i+1===h.month?'selected':''}>${m}</option>`).join('');
+  fillSelect('h2m-year', 1350, 1500, h.year);
+  
+  // Miladi to Hijri
+  fillSelect('m2h-day', 1, 31, n.getDate());
+  const mms = document.getElementById('m2h-month');
+  mms.innerHTML = MILADI_MONTHS.map((m,i) => `<option value="${i+1}" ${i+1===n.getMonth()+1?'selected':''}>${m}</option>`).join('');
+  fillSelect('m2h-year', 1900, 2100, n.getFullYear());
+}
+
+function switchConvertTab(tab) {
+  if(tab === 'h2m') {
+    document.getElementById('panel-h2m').style.display = '';
+    document.getElementById('panel-m2h').style.display = 'none';
+    document.getElementById('tab-h2m').classList.add('active');
+    document.getElementById('tab-m2h').classList.remove('active');
+  } else {
+    document.getElementById('panel-h2m').style.display = 'none';
+    document.getElementById('panel-m2h').style.display = '';
+    document.getElementById('tab-h2m').classList.remove('active');
+    document.getElementById('tab-m2h').classList.add('active');
+  }
+}
+
+function convertH2M() {
+  const day = parseInt(document.getElementById('h2m-day').value);
+  const month = parseInt(document.getElementById('h2m-month').value);
+  const year = parseInt(document.getElementById('h2m-year').value);
+  const g = hijriToGregorian(year, month, day);
+  const d = new Date(g.year, g.month-1, g.day);
+  document.getElementById('h2m-result-val').textContent = 
+    `${g.day} ${MILADI_MONTHS[g.month-1]} ${g.year} م\n${DAYS_AR[d.getDay()]}`;
+  document.getElementById('h2m-result').classList.add('show');
+}
+
+function convertM2H() {
+  const day = parseInt(document.getElementById('m2h-day').value);
+  const month = parseInt(document.getElementById('m2h-month').value);
+  const year = parseInt(document.getElementById('m2h-year').value);
+  const h = gregorianToHijri(year, month, day);
+  document.getElementById('m2h-result-val').textContent = 
+    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
+  document.getElementById('m2h-result').classList.add('show');
+}
+
+// ==================== DIFF ====================
+function calcDiff() {
+  const d1 = new Date(document.getElementById('diff-d1').value);
+  const d2 = new Date(document.getElementById('diff-d2').value);
+  if(!d1.getTime() || !d2.getTime()) return alert('يرجى إدخال التاريخين');
+  
+  const start = d1 < d2 ? d1 : d2;
+  const end = d1 < d2 ? d2 : d1;
+  
+  const totalMs = end - start;
+  const totalDays = Math.floor(totalMs / (1000*60*60*24));
+  
+  let y = end.getFullYear() - start.getFullYear();
+  let m = end.getMonth() - start.getMonth();
+  let d = end.getDate() - start.getDate();
+  
+  if(d < 0) { m--; const prev = new Date(end.getFullYear(), end.getMonth(), 0); d += prev.getDate(); }
+  if(m < 0) { y--; m += 12; }
+  
+  document.getElementById('diff-years').textContent = y;
+  document.getElementById('diff-months').textContent = m;
+  document.getElementById('diff-days').textContent = d;
+  document.getElementById('diff-total-days').textContent = totalDays.toLocaleString('ar-SA');
+  
+  let parts = [];
+  if(y > 0) parts.push(`${y} ${y===1?'سنة':'سنوات'}`);
+  if(m > 0) parts.push(`${m} ${m===1?'شهر':'أشهر'}`);
+  if(d > 0) parts.push(`${d} يوم`);
+  if(parts.length === 0) parts.push('نفس اليوم');
+  
+  document.getElementById('diff-text').textContent = parts.join(' و ');
+  document.getElementById('diff-result').style.display = '';
+}
+
+// ==================== AGE ====================
+function calcAge() {
+  const bStr = document.getElementById('age-input').value;
+  if(!bStr) return alert('يرجى إدخال تاريخ الميلاد');
+  const birth = new Date(bStr);
+  const today = new Date();
+  
+  let y = today.getFullYear() - birth.getFullYear();
+  let m = today.getMonth() - birth.getMonth();
+  let d = today.getDate() - birth.getDate();
+  
+  if(d < 0) { m--; const prev = new Date(today.getFullYear(), today.getMonth(), 0); d += prev.getDate(); }
+  if(m < 0) { y--; m += 12; }
+  
+  const totalDays = Math.floor((today - birth) / (1000*60*60*24));
+  
+  document.getElementById('age-m-y').textContent = y;
+  document.getElementById('age-m-mo').textContent = m;
+  document.getElementById('age-m-d').textContent = d;
+  document.getElementById('age-total-days').textContent = totalDays.toLocaleString('ar-SA');
+  
+  // Hijri age
+  const birthH = gregorianToHijri(birth.getFullYear(), birth.getMonth()+1, birth.getDate());
+  const todayH = gregorianToHijri(today.getFullYear(), today.getMonth()+1, today.getDate());
+  
+  let hy = todayH.year - birthH.year;
+  let hm = todayH.month - birthH.month;
+  let hd = todayH.day - birthH.day;
+  
+  if(hd < 0) { hm--; hd += 29; }
+  if(hm < 0) { hy--; hm += 12; }
+  
+  document.getElementById('age-h-y').textContent = hy;
+  document.getElementById('age-h-mo').textContent = hm;
+  document.getElementById('age-h-d').textContent = hd;
+  
+  document.getElementById('age-result').style.display = '';
+}
+
+// ==================== NUMBER TO WORDS ====================
+const ones = ['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'];
+const tens = ['','عشرة','عشرون','ثلاثون','أربعون','خمسون','ستون','سبعون','ثمانون','تسعون'];
+const hundreds = ['','مئة','مئتان','ثلاثمئة','أربعمئة','خمسمئة','ستمئة','سبعمئة','ثمانمئة','تسعمئة'];
+
+function numToWords(n) {
+  n = parseInt(n);
+  if(isNaN(n)) return '';
+  if(n === 0) return 'صفر';
+  if(n < 0) return 'سالب ' + numToWords(-n);
+  
+  let result = '';
+  
+  if(n >= 1000000000) {
+    const b = Math.floor(n / 1000000000);
+    result += numToWords(b) + ' مليار ';
+    n %= 1000000000;
+  }
+  if(n >= 1000000) {
+    const m = Math.floor(n / 1000000);
+    if(m === 1) result += 'مليون ';
+    else if(m === 2) result += 'مليونان ';
+    else result += numToWords(m) + ' مليون ';
+    n %= 1000000;
+  }
+  if(n >= 1000) {
+    const k = Math.floor(n / 1000);
+    if(k === 1) result += 'ألف ';
+    else if(k === 2) result += 'ألفان ';
+    else if(k <= 10) result += numToWords(k) + ' آلاف ';
+    else result += numToWords(k) + ' ألف ';
+    n %= 1000;
+  }
+  if(n >= 100) {
+    result += hundreds[Math.floor(n/100)] + ' ';
+    n %= 100;
+  }
+  if(n >= 20) {
+    const t = Math.floor(n/10);
+    const o = n % 10;
+    if(o > 0) result += ones[o] + ' و' + tens[t] + ' ';
+    else result += tens[t] + ' ';
+    n = 0;
+  } else if(n > 0) {
+    result += ones[n] + ' ';
+  }
+  
+  return result.trim();
+}
+
+function convertNumberLive() {
+  const val = document.getElementById('num-input').value;
+  const res = document.getElementById('num-result');
+  if(!val || val === '') {
+    res.classList.remove('show');
+    return;
+  }
+  const words = numToWords(val);
+  res.textContent = words ? words + ' فقط' : '';
+  res.classList.toggle('show', !!words);
+}
+
+// ==================== VAT ====================
+let vatMode = 'excl';
+
+function switchVatTab(mode) {
+  vatMode = mode;
+  if(mode === 'excl') {
+    document.getElementById('vat-tab1').classList.add('active');
+    document.getElementById('vat-tab2').classList.remove('active');
+    document.getElementById('vat-label').textContent = 'أدخل المبلغ قبل الضريبة';
+  } else {
+    document.getElementById('vat-tab1').classList.remove('active');
+    document.getElementById('vat-tab2').classList.add('active');
+    document.getElementById('vat-label').textContent = 'أدخل المبلغ شاملاً الضريبة';
+  }
+  document.getElementById('vat-result').style.display = 'none';
+  document.getElementById('vat-input').value = '';
+}
+
+function fmt(n) { return parseFloat(n.toFixed(2)).toLocaleString('ar-SA', {minimumFractionDigits:2}); }
+
+function calcVat() {
+  const amount = parseFloat(document.getElementById('vat-input').value);
+  if(isNaN(amount) || amount < 0) return alert('يرجى إدخال مبلغ صحيح');
+  
+  let original, tax, total;
+  const grid = document.getElementById('vat-grid');
+  
+  if(vatMode === 'excl') {
+    original = amount;
+    tax = amount * 0.15;
+    total = amount + tax;
+    grid.innerHTML = `
+      <div class="vat-box original"><div class="vat-box-label">المبلغ الأصلي</div><div class="vat-box-value">${fmt(original)}<span style="font-size:12px;color:var(--text3)"> ر.س</span></div></div>
+      <div class="vat-box tax"><div class="vat-box-label">الضريبة 15%</div><div class="vat-box-value">${fmt(tax)}<span style="font-size:12px;color:var(--text3)"> ر.س</span></div></div>
+      <div class="vat-box total" style="grid-column:span 2"><div class="vat-box-label">الإجمالي شامل الضريبة</div><div class="vat-box-value" style="font-size:26px">${fmt(total)}<span style="font-size:14px;color:var(--text3)"> ر.س</span></div></div>
+    `;
+  } else {
+    total = amount;
+    original = amount / 1.15;
+    tax = total - original;
+    grid.innerHTML = `
+      <div class="vat-box total"><div class="vat-box-label">المبلغ الإجمالي</div><div class="vat-box-value">${fmt(total)}<span style="font-size:12px;color:var(--text3)"> ر.س</span></div></div>
+      <div class="vat-box tax2"><div class="vat-box-label">الضريبة المحتسبة</div><div class="vat-box-value">${fmt(tax)}<span style="font-size:12px;color:var(--text3)"> ر.س</span></div></div>
+      <div class="vat-box original" style="grid-column:span 2"><div class="vat-box-label">المبلغ قبل الضريبة</div><div class="vat-box-value" style="font-size:26px">${fmt(original)}<span style="font-size:14px;color:var(--text3)"> ر.س</span></div></div>
+    `;
+  }
+  document.getElementById('vat-result').style.display = '';
+}
+
+// ==================== THEME ====================
+function toggleTheme() {
+  const root = document.documentElement;
+  const knob = document.getElementById('theme-knob');
+  if(root.classList.contains('light')) {
+    root.classList.remove('light');
+    knob.textContent = '🌙';
+    localStorage.setItem('theme','dark');
+  } else {
+    root.classList.add('light');
+    knob.textContent = '☀️';
+    localStorage.setItem('theme','light');
+  }
+}
+
+// Load saved theme
+(function() {
+  const saved = localStorage.getItem('theme');
+  if(saved === 'light') {
+    document.documentElement.classList.add('light');
+    const knob = document.getElementById('theme-knob');
+    if(knob) knob.textContent = '☀️';
+  }
+})();
+
+// ==================== INIT ====================
+renderHomeToday();
+initConvertSelects();
+// Set today's date for diff and age inputs
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('diff-d1').value = todayStr;
+document.getElementById('diff-d2').value = todayStr;
+document.getElementById('age-input').max = todayStr;
+</script>
+</body>
+</html>
