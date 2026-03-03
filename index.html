@@ -963,7 +963,8 @@ async function fetchHijriFromAladhan(gYear, gMonth, gDay) {
   if (aladhanCache[key]) return aladhanCache[key];
   try {
     const url = 'https://api.aladhan.com/v1/gToH/'
-      +String(gDay).padStart(2,'0')+'-'+String(gMonth).padStart(2,'0')+'-'+gYear;
+      +String(gDay).padStart(2,'0')+'-'+String(gMonth).padStart(2,'0')+'-'+gYear
+      +'?calendarMethod=UMM_AL_QURA';
     const res = await fetch(url);
     const data = await res.json();
     if (data.code === 200) {
@@ -992,7 +993,7 @@ async function prefetchMonthFromAladhan(gYear, gMonth) {
     }
   }
   try {
-    const res = await fetch('https://api.aladhan.com/v1/gToH/01-'+mm+'-'+gYear);
+    const res = await fetch('https://api.aladhan.com/v1/gToH/01-'+mm+'-'+gYear+'?calendarMethod=UMM_AL_QURA');
     const data = await res.json();
     if (data.code === 200) {
       let hd=parseInt(data.data.hijri.day), hm=parseInt(data.data.hijri.month.number), hy=parseInt(data.data.hijri.year);
@@ -1125,7 +1126,7 @@ async function convertH2M() {
   try {
     const dd = String(day).padStart(2,'0');
     const mm = String(month).padStart(2,'0');
-    const res = await fetch(`https://api.aladhan.com/v1/hToG/${dd}-${mm}-${year}`);
+    const res = await fetch(`https://api.aladhan.com/v1/hToG/${dd}-${mm}-${year}?calendarMethod=UMM_AL_QURA`);
     const data = await res.json();
     if(data.code === 200) {
       const g = data.data.gregorian;
