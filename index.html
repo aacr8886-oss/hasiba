@@ -955,62 +955,114 @@ const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الث
 const MILADI_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const DAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
+// ==================== ALADHAN API - المصدر الموثوق الوحيد ====================
+let aladhanCache = {};
+
+async function fetchHijriFromAladhan(gYear, gMonth, gDay) {
+  const key = gYear+'-'+String(gMonth).padStart(2,'0')+'-'+String(gDay).padStart(2,'0');
+  if (aladhanCache[key]) return aladhanCache[key];
+  try {
+    const url = 'https://api.aladhan.com/v1/gToH/'
+      +String(gDay).padStart(2,'0')+'-'+String(gMonth).padStart(2,'0')+'-'+gYear;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code === 200) {
+      const h = data.data.hijri;
+      const r = {day:parseInt(h.day), month:parseInt(h.month.number), year:parseInt(h.year)};
+      aladhanCache[key] = r;
+      return r;
+    }
+  } catch(e) {
+    console.warn('Aladhan API error:', e);
+  }
+  // Fallback للحساب المحلي عند فشل API
+  const local = gregorianToHijri(gYear, gMonth, gDay);
+  aladhanCache[key] = local;
+  return local;
+}
+
+async function prefetchMonthFromAladhan(gYear, gMonth) {
+  const days = new Date(gYear, gMonth, 0).getDate();
+  const mm = String(gMonth).padStart(2,'0');
+  // نملأ بالحساب المحلي أولاً كـ fallback
+  for(let d=1; d<=days; d++) {
+    const key = gYear+'-'+mm+'-'+String(d).padStart(2,'0');
+    if(!aladhanCache[key]) {
+      aladhanCache[key] = gregorianToHijri(gYear, gMonth, d);
+    }
+  }
+  try {
+    const res = await fetch('https://api.aladhan.com/v1/gToH/01-'+mm+'-'+gYear);
+    const data = await res.json();
+    if (data.code === 200) {
+      let hd=parseInt(data.data.hijri.day), hm=parseInt(data.data.hijri.month.number), hy=parseInt(data.data.hijri.year);
+      for (let d=1; d<=days; d++) {
+        const key = gYear+'-'+mm+'-'+String(d).padStart(2,'0');
+        aladhanCache[key] = {day:hd, month:hm, year:hy};
+        hd++; if(hd>30){hd=1;hm++;if(hm>12){hm=1;hy++;}}
+      }
+    }
+  } catch(e) {
+    console.warn('Aladhan prefetch error:', e);
+  }
+}
+
 function todayHijri() {
   const n = new Date();
   return gregorianToHijri(n.getFullYear(), n.getMonth()+1, n.getDate());
 }
 
 // ==================== HOME TODAY ====================
-function renderHomeToday() {
+async function renderHomeToday() {
   const n = new Date();
-  const h = todayHijri();
-  document.getElementById('home-today-hijri').textContent = 
-    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
-  document.getElementById('home-today-miladi').textContent = 
+  document.getElementById('home-today-miladi').textContent =
     `${n.getDate()} ${MILADI_MONTHS[n.getMonth()]} ${n.getFullYear()} م`;
+  document.getElementById('home-today-hijri').textContent = '...';
+  const h = await fetchHijriFromAladhan(n.getFullYear(), n.getMonth()+1, n.getDate());
+  document.getElementById('home-today-hijri').textContent =
+    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
 }
 
 // ==================== CALENDAR ====================
 let calDate = new Date();
 
-function renderCalendar() {
+async function renderCalendar() {
   const today = new Date();
-  const todayH = todayHijri();
-  const h = gregorianToHijri(calDate.getFullYear(), calDate.getMonth()+1, 1);
-  
-  document.getElementById('cal-miladi-month').textContent = 
-    `${MILADI_MONTHS[calDate.getMonth()]} ${calDate.getFullYear()}`;
-  document.getElementById('cal-hijri-month').textContent = 
-    `${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
-  
-  // Today card
-  const todayG = new Date();
-  document.getElementById('cal-today-hijri').textContent = 
-    `${todayH.day} ${HIJRI_MONTHS[todayH.month-1]} ${todayH.year} هـ`;
-  document.getElementById('cal-today-miladi').textContent = 
-    `${todayG.getDate()} ${MILADI_MONTHS[todayG.getMonth()]} ${todayG.getFullYear()} م`;
-  document.getElementById('cal-today-day').textContent = DAYS_AR[todayG.getDay()];
+  const gYear = calDate.getFullYear();
+  const gMonth = calDate.getMonth()+1;
 
-  // Grid
-  const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1).getDay();
-  const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate();
-  
-  const grid = document.getElementById('cal-grid');
-  grid.innerHTML = '';
-  
-  // Empty cells
-  for(let i = 0; i < firstDay; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cal-cell empty';
-    grid.appendChild(cell);
+  document.getElementById("cal-miladi-month").textContent =
+    MILADI_MONTHS[calDate.getMonth()]+" "+gYear;
+  document.getElementById("cal-hijri-month").textContent = "جاري التحميل...";
+
+  await prefetchMonthFromAladhan(gYear, gMonth);
+
+  const firstKey = gYear+"-"+String(gMonth).padStart(2,"0")+"-01";
+  const fh = aladhanCache[firstKey];
+  if(fh) document.getElementById("cal-hijri-month").textContent =
+    HIJRI_MONTHS[fh.month-1]+" "+fh.year+" هـ";
+
+  const todayH = await fetchHijriFromAladhan(today.getFullYear(), today.getMonth()+1, today.getDate());
+  document.getElementById("cal-today-hijri").textContent =
+    todayH.day+" "+HIJRI_MONTHS[todayH.month-1]+" "+todayH.year+" هـ";
+  document.getElementById("cal-today-miladi").textContent =
+    today.getDate()+" "+MILADI_MONTHS[today.getMonth()]+" "+today.getFullYear()+" م";
+  document.getElementById("cal-today-day").textContent = DAYS_AR[today.getDay()];
+
+  const firstDay = new Date(gYear, gMonth-1, 1).getDay();
+  const daysInMonth = new Date(gYear, gMonth, 0).getDate();
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
+  for(let i=0; i<firstDay; i++) {
+    const cell=document.createElement("div"); cell.className="cal-cell empty"; grid.appendChild(cell);
   }
-  
-  for(let d = 1; d <= daysInMonth; d++) {
-    const cell = document.createElement('div');
-    const hd = gregorianToHijri(calDate.getFullYear(), calDate.getMonth()+1, d);
-    const isToday = d === today.getDate() && calDate.getMonth() === today.getMonth() && calDate.getFullYear() === today.getFullYear();
-    cell.className = 'cal-cell' + (isToday ? ' today' : '');
-    cell.innerHTML = `<span>${d}</span><span class="cal-hijri">${hd.day}</span>`;
+  for(let d=1; d<=daysInMonth; d++) {
+    const cell=document.createElement("div");
+    const key=gYear+"-"+String(gMonth).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const hd=aladhanCache[key];
+    const isToday=d===today.getDate()&&calDate.getMonth()===today.getMonth()&&gYear===today.getFullYear();
+    cell.className="cal-cell"+(isToday?" today":"");
+    cell.innerHTML='<span>'+d+'</span><span class="cal-hijri">'+(hd?hd.day:'')+"</span>";
     grid.appendChild(cell);
   }
 }
@@ -1064,25 +1116,44 @@ function switchConvertTab(tab) {
   }
 }
 
-function convertH2M() {
+async function convertH2M() {
   const day = parseInt(document.getElementById('h2m-day').value);
   const month = parseInt(document.getElementById('h2m-month').value);
   const year = parseInt(document.getElementById('h2m-year').value);
+  document.getElementById('h2m-result-val').textContent = 'جاري التحويل...';
+  document.getElementById('h2m-result').classList.add('show');
+  try {
+    const dd = String(day).padStart(2,'0');
+    const mm = String(month).padStart(2,'0');
+    const res = await fetch(`https://api.aladhan.com/v1/hToG/${dd}-${mm}-${year}`);
+    const data = await res.json();
+    if(data.code === 200) {
+      const g = data.data.gregorian;
+      const gDay = parseInt(g.day);
+      const gMonth = parseInt(g.month.number);
+      const gYear = parseInt(g.year);
+      const d = new Date(gYear, gMonth-1, gDay);
+      document.getElementById('h2m-result-val').textContent =
+        `${gDay} ${MILADI_MONTHS[gMonth-1]} ${gYear} م\n${DAYS_AR[d.getDay()]}`;
+      return;
+    }
+  } catch(e) {}
+  // Fallback محلي
   const g = hijriToGregorian(year, month, day);
   const d = new Date(g.year, g.month-1, g.day);
-  document.getElementById('h2m-result-val').textContent = 
+  document.getElementById('h2m-result-val').textContent =
     `${g.day} ${MILADI_MONTHS[g.month-1]} ${g.year} م\n${DAYS_AR[d.getDay()]}`;
-  document.getElementById('h2m-result').classList.add('show');
 }
 
-function convertM2H() {
+async function convertM2H() {
   const day = parseInt(document.getElementById('m2h-day').value);
   const month = parseInt(document.getElementById('m2h-month').value);
   const year = parseInt(document.getElementById('m2h-year').value);
-  const h = gregorianToHijri(year, month, day);
-  document.getElementById('m2h-result-val').textContent = 
-    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
+  document.getElementById('m2h-result-val').textContent = 'جاري التحويل...';
   document.getElementById('m2h-result').classList.add('show');
+  const h = await fetchHijriFromAladhan(year, month, day);
+  document.getElementById('m2h-result-val').textContent =
+    `${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} هـ`;
 }
 
 // ==================== DIFF ====================
@@ -1139,8 +1210,8 @@ function initAgeHijriSelects() {
   fillSelect('age-h-year', 1350, h.year, h.year - 25);
 }
 
-function calcAge(mode) {
-  let birthG; // { year, month, day } gregorian
+async function calcAge(mode) {
+  let birthG;
 
   if(mode === 'm') {
     const bStr = document.getElementById('age-input-m').value;
@@ -1148,30 +1219,37 @@ function calcAge(mode) {
     const d = new Date(bStr);
     birthG = { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate() };
   } else {
-    // Hijri input → convert to Gregorian
+    // هجري → ميلادي عبر API
     const hDay   = parseInt(document.getElementById('age-h-day').value);
     const hMonth = parseInt(document.getElementById('age-h-month').value);
     const hYear  = parseInt(document.getElementById('age-h-year').value);
-    birthG = hijriToGregorian(hYear, hMonth, hDay);
+    try {
+      const dd = String(hDay).padStart(2,'0');
+      const mm = String(hMonth).padStart(2,'0');
+      const res = await fetch(`https://api.aladhan.com/v1/hToG/${dd}-${mm}-${hYear}`);
+      const data = await res.json();
+      if(data.code === 200) {
+        const g = data.data.gregorian;
+        birthG = { year: parseInt(g.year), month: parseInt(g.month.number), day: parseInt(g.day) };
+      } else { birthG = hijriToGregorian(hYear, hMonth, hDay); }
+    } catch(e) { birthG = hijriToGregorian(hYear, hMonth, hDay); }
   }
 
   const birth = new Date(birthG.year, birthG.month-1, birthG.day);
   const today = new Date();
-
   if(birth > today) return alert('تاريخ الميلاد لا يمكن أن يكون في المستقبل');
 
-  // ── Gregorian age ──
+  // العمر الميلادي
   let gy = today.getFullYear() - birth.getFullYear();
   let gm = today.getMonth()    - birth.getMonth();
   let gd = today.getDate()     - birth.getDate();
   if(gd < 0) { gm--; gd += new Date(today.getFullYear(), today.getMonth(), 0).getDate(); }
   if(gm < 0) { gy--; gm += 12; }
-
   const totalDays = Math.floor((today - birth) / (1000*60*60*24));
 
-  // ── Hijri age ──
-  const birthH = gregorianToHijri(birthG.year, birthG.month, birthG.day);
-  const todayH = gregorianToHijri(today.getFullYear(), today.getMonth()+1, today.getDate());
+  // العمر الهجري عبر API
+  const birthH = await fetchHijriFromAladhan(birthG.year, birthG.month, birthG.day);
+  const todayH = await fetchHijriFromAladhan(today.getFullYear(), today.getMonth()+1, today.getDate());
 
   let hy = todayH.year  - birthH.year;
   let hm = todayH.month - birthH.month;
@@ -1179,20 +1257,15 @@ function calcAge(mode) {
   if(hd < 0) { hm--; hd += 29; }
   if(hm < 0) { hy--; hm += 12; }
 
-  // ── Render ──
   document.getElementById('age-m-y').textContent  = gy;
   document.getElementById('age-m-mo').textContent = gm;
   document.getElementById('age-m-d').textContent  = gd;
   document.getElementById('age-total-days').textContent = totalDays.toLocaleString('ar-SA');
-
   document.getElementById('age-h-y-res').textContent  = hy;
   document.getElementById('age-h-mo-res').textContent = hm;
   document.getElementById('age-h-d-res').textContent  = hd;
-
-  // Show birth hijri date (useful when input was Gregorian)
   document.getElementById('age-birth-hijri-display').textContent =
     `${birthH.day} ${HIJRI_MONTHS[birthH.month-1]} ${birthH.year} هـ`;
-
   document.getElementById('age-result').style.display = '';
 }
 
@@ -1333,14 +1406,13 @@ function toggleTheme() {
 })();
 
 // ==================== INIT ====================
-renderHomeToday();
-initConvertSelects();
-initAgeHijriSelects();
-// Set today's date for diff and age inputs
 const todayStr = new Date().toISOString().split('T')[0];
 document.getElementById('diff-d1').value = todayStr;
 document.getElementById('diff-d2').value = todayStr;
-document.getElementById('age-input').max = todayStr;
+document.getElementById('age-input-m').max = todayStr;
+initConvertSelects();
+initAgeHijriSelects();
+renderHomeToday();
 </script>
 </body>
 </html>
